@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>학습 과제 관리 보드</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    min-height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(135deg, #2b2f3a, #14161b);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 16px;
+    color: #fff;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 520px;
+    background: #1c1f26;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 20px;
+    text-align: center;
+  }
+
+  .add-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .add-form input,
+  .add-form select,
+  .add-form button {
+    min-height: 44px;
+    border-radius: 10px;
+    border: 1px solid #34394a;
+    background: #252a34;
+    color: #fff;
+    padding: 0 12px;
+    font-size: 15px;
+    outline: none;
+  }
+
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    outline: none;
+  }
+
+  .add-form select,
+  .status-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239a9ea8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 6px;
+    padding-right: 30px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .add-form select:hover,
+  .status-select:hover {
+    border-color: #4a5064;
+  }
+
+  .add-form select:focus,
+  .status-select:focus {
+    border-color: #ff9f0a;
+  }
+
+  .add-form > input {
+    flex: 2 1 160px;
+  }
+
+  .add-form > select {
+    flex: 1 1 100px;
+  }
+
+  .add-form button {
+    flex: 0 0 auto;
+    padding: 0 20px;
+    background: #ff9f0a;
+    color: #1c1f26;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .add-form button:active {
+    filter: brightness(1.1);
+  }
+
+  .date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 140px;
+  }
+
+  .date-field .date-label {
+    font-size: 12px;
+    color: #9a9ea8;
+  }
+
+  .date-field input[type="date"] {
+    color-scheme: dark;
+    width: 100%;
+  }
+
+  .form-error {
+    flex: 1 1 100%;
+    margin: -4px 0 0;
+    font-size: 13px;
+    color: #ff8f7a;
+    display: none;
+  }
+
+  .form-error.visible {
+    display: block;
+  }
+
+  .filter-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .tab {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    border: 1px solid #34394a;
+    background: #252a34;
+    color: #c7cad1;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab.active {
+    background: #ff9f0a;
+    color: #1c1f26;
+    border-color: #ff9f0a;
+    font-weight: 600;
+  }
+
+  .progress-summary {
+    background: #252a34;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+
+  .progress-label {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: #9a9ea8;
+  }
+
+  .progress-text {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: #34394a;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: #3ecf8e;
+    width: 0%;
+    transition: width 0.2s ease;
+  }
+
+  .task-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #252a34;
+    border: 1px solid #34394a;
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+
+  .task-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .task-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .task-title {
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .task-title.done {
+    color: #7d818a;
+    text-decoration: line-through;
+  }
+
+  .task-dates {
+    font-size: 12px;
+    color: #9a9ea8;
+  }
+
+  .task-dates.overdue {
+    color: #ff8f7a;
+    font-weight: 600;
+  }
+
+  .task-item.overdue {
+    border-color: #5a2a2a;
+    background: #2b2020;
+  }
+
+  .badge {
+    flex: 0 0 auto;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .badge-high {
+    background: #40201c;
+    color: #ff8f7a;
+  }
+
+  .badge-medium {
+    background: #412b0c;
+    color: #ffbb55;
+  }
+
+  .badge-low {
+    background: #153824;
+    color: #5fd696;
+  }
+
+  .priority-select {
+    border: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%239a9ea8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px 5px;
+    padding: 3px 22px 3px 10px;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+
+  .priority-select:hover {
+    filter: brightness(1.15);
+  }
+
+  .priority-select:focus {
+    box-shadow: 0 0 0 2px rgba(255, 159, 10, 0.5);
+  }
+
+  .status-select {
+    flex: 0 0 120px;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid #34394a;
+    background: #1c1f26;
+    color: #fff;
+    padding: 0 10px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: #7d818a;
+    font-size: 14px;
+    padding: 20px 0;
+    display: none;
+  }
+
+  .calendar-toggle-row {
+    margin-bottom: 16px;
+  }
+
+  .calendar-panel {
+    background: #252a34;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .calendar-panel.visible {
+    display: block;
+  }
+
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .calendar-nav-btn {
+    min-height: 32px;
+    min-width: 32px;
+    border-radius: 8px;
+    border: 1px solid #34394a;
+    background: #1c1f26;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .calendar-label {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .cal-weekday {
+    text-align: center;
+    font-size: 11px;
+    color: #7d818a;
+    padding: 4px 0;
+  }
+
+  .cal-cell {
+    min-height: 44px;
+    border-radius: 8px;
+    background: #1c1f26;
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .cal-cell.empty {
+    background: transparent;
+  }
+
+  .cal-cell.today {
+    border: 1px solid #ff9f0a;
+  }
+
+  .cal-cell:not(.empty) {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cal-cell.selected {
+    background: #333a4d;
+    box-shadow: inset 0 0 0 1px #ff9f0a;
+  }
+
+  .cal-day-num {
+    font-size: 12px;
+    color: #c7cad1;
+  }
+
+  .cal-dots {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .cal-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+
+  .cal-dot-high {
+    background: #ff8f7a;
+  }
+
+  .cal-dot-medium {
+    background: #ffbb55;
+  }
+
+  .cal-dot-low {
+    background: #5fd696;
+  }
+
+  .cal-more {
+    font-size: 9px;
+    color: #7d818a;
+  }
+
+  .date-filter-indicator {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #252a34;
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #c7cad1;
+  }
+
+  .date-filter-indicator.visible {
+    display: flex;
+  }
+
+  @media (max-width: 480px) {
+    .add-form > input,
+    .add-form > select,
+    .add-form > button,
+    .date-field {
+      flex: 1 1 100%;
+    }
+
+    .task-item {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .task-info {
+      flex-wrap: wrap;
+    }
+
+    .status-select {
+      flex: 1 1 100%;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <h1>학습 과제 관리 보드</h1>
+
+  <form class="add-form" id="addForm">
+    <input type="text" id="titleInput" placeholder="예: 수학 숙제 3단원" maxlength="100" autocomplete="off" required>
+    <select id="priorityInput">
+      <option value="high">높음</option>
+      <option value="medium" selected>보통</option>
+      <option value="low">낮음</option>
+    </select>
+    <label class="date-field">
+      <span class="date-label">시작일</span>
+      <input type="date" id="startDateInput">
+    </label>
+    <label class="date-field">
+      <span class="date-label">종료일</span>
+      <input type="date" id="endDateInput">
+    </label>
+    <p class="form-error" id="formError">종료일은 시작일과 같거나 이후여야 합니다.</p>
+    <button type="submit">추가</button>
+  </form>
+
+  <div class="filter-tabs" id="filterTabs">
+    <button type="button" class="tab active" data-filter="all">전체</button>
+    <button type="button" class="tab" data-filter="todo">할 일</button>
+    <button type="button" class="tab" data-filter="in-progress">진행 중</button>
+    <button type="button" class="tab" data-filter="done">완료</button>
+  </div>
+
+  <div class="calendar-toggle-row">
+    <button type="button" class="tab" id="calendarToggleBtn">캘린더 보기</button>
+  </div>
+
+  <div class="calendar-panel" id="calendarPanel">
+    <div class="calendar-header">
+      <button type="button" class="calendar-nav-btn" id="calendarPrevBtn" aria-label="이전 달">‹</button>
+      <span class="calendar-label" id="calendarLabel"></span>
+      <button type="button" class="calendar-nav-btn" id="calendarNextBtn" aria-label="다음 달">›</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <div class="progress-summary">
+    <p class="progress-label">진행도</p>
+    <p class="progress-text" id="progressText">0 / 0 완료 (0%)</p>
+    <div class="progress-bar">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <div class="date-filter-indicator" id="dateFilterIndicator">
+    <span id="dateFilterLabel"></span>
+    <button type="button" class="calendar-nav-btn" id="dateFilterClear" aria-label="날짜 필터 해제">×</button>
+  </div>
+
+  <ul class="task-list" id="taskList"></ul>
+  <p class="empty-state" id="emptyState">표시할 항목이 없습니다.</p>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'task-board:v1';
+  const PRIORITY_LABEL = { high: '높음', medium: '보통', low: '낮음' };
+  const STATUS_LABEL = { todo: '할 일', 'in-progress': '진행 중', done: '완료' };
+
+  const addForm = document.getElementById('addForm');
+  const titleInput = document.getElementById('titleInput');
+  const priorityInput = document.getElementById('priorityInput');
+  const startDateInput = document.getElementById('startDateInput');
+  const endDateInput = document.getElementById('endDateInput');
+  const formError = document.getElementById('formError');
+  const filterTabs = document.getElementById('filterTabs');
+  const taskList = document.getElementById('taskList');
+  const emptyState = document.getElementById('emptyState');
+  const progressText = document.getElementById('progressText');
+  const progressFill = document.getElementById('progressFill');
+  const calendarToggleBtn = document.getElementById('calendarToggleBtn');
+  const calendarPanel = document.getElementById('calendarPanel');
+  const calendarPrevBtn = document.getElementById('calendarPrevBtn');
+  const calendarNextBtn = document.getElementById('calendarNextBtn');
+  const calendarLabel = document.getElementById('calendarLabel');
+  const calendarGrid = document.getElementById('calendarGrid');
+  const dateFilterIndicator = document.getElementById('dateFilterIndicator');
+  const dateFilterLabel = document.getElementById('dateFilterLabel');
+  const dateFilterClear = document.getElementById('dateFilterClear');
+
+  let tasks = loadTasks();
+  let currentFilter = 'all';
+  let calendarVisible = false;
+  let calendarMonth = new Date();
+  calendarMonth.setDate(1);
+  let selectedDate = null;
+
+  function pad2(n) {
+    return n < 10 ? '0' + n : '' + n;
+  }
+
+  function formatDate(year, monthIndex, day) {
+    return year + '-' + pad2(monthIndex + 1) + '-' + pad2(day);
+  }
+
+  function todayStr() {
+    const now = new Date();
+    return formatDate(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+
+  function formatShortDate(dateStr) {
+    const parts = dateStr.split('-');
+    return parseInt(parts[1], 10) + '/' + parseInt(parts[2], 10);
+  }
+
+  function formatRange(start, end) {
+    if (start && end) {
+      return start === end ? formatShortDate(start) : formatShortDate(start) + ' ~ ' + formatShortDate(end);
+    }
+    if (start) return formatShortDate(start) + ' ~';
+    if (end) return '~ ' + formatShortDate(end);
+    return '';
+  }
+
+  function isTaskOverdue(task) {
+    const end = task.endDate || task.startDate;
+    return !!end && end < todayStr() && task.status !== 'done';
+  }
+
+  function loadTasks() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveTasks() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  function addTask(title, priority, startDate, endDate) {
+    tasks.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      title: title,
+      priority: priority,
+      status: 'todo',
+      startDate: startDate || null,
+      endDate: endDate || null,
+      createdAt: Date.now()
+    });
+    saveTasks();
+    render();
+  }
+
+  function updateStatus(id, status) {
+    const task = tasks.find(function (t) { return t.id === id; });
+    if (!task) return;
+    task.status = status;
+    saveTasks();
+    render();
+  }
+
+  function updatePriority(id, priority) {
+    const task = tasks.find(function (t) { return t.id === id; });
+    if (!task) return;
+    task.priority = priority;
+    saveTasks();
+    render();
+  }
+
+  function getFilteredTasks() {
+    return tasks.filter(function (t) {
+      if (currentFilter !== 'all' && t.status !== currentFilter) return false;
+      if (selectedDate) {
+        if (!t.startDate) return false;
+        const start = t.startDate;
+        const end = t.endDate || t.startDate;
+        if (!(selectedDate >= start && selectedDate <= end)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderSummary() {
+    const total = tasks.length;
+    const done = tasks.filter(function (t) { return t.status === 'done'; }).length;
+    const percent = total ? Math.round((done / total) * 100) : 0;
+    progressText.textContent = done + ' / ' + total + ' 완료 (' + percent + '%)';
+    progressFill.style.width = percent + '%';
+  }
+
+  function renderList() {
+    const filtered = getFilteredTasks();
+    taskList.innerHTML = '';
+    emptyState.style.display = filtered.length ? 'none' : 'block';
+
+    filtered.forEach(function (task) {
+      const overdue = isTaskOverdue(task);
+
+      const li = document.createElement('li');
+      li.className = 'task-item' + (overdue ? ' overdue' : '');
+      li.dataset.id = task.id;
+
+      const info = document.createElement('div');
+      info.className = 'task-info';
+
+      const text = document.createElement('div');
+      text.className = 'task-text';
+
+      const titleEl = document.createElement('span');
+      titleEl.className = 'task-title' + (task.status === 'done' ? ' done' : '');
+      titleEl.textContent = task.title;
+      text.appendChild(titleEl);
+
+      const rangeText = formatRange(task.startDate, task.endDate);
+      if (rangeText) {
+        const datesEl = document.createElement('span');
+        datesEl.className = 'task-dates' + (overdue ? ' overdue' : '');
+        datesEl.textContent = overdue ? rangeText + ' · 기한 지남' : rangeText;
+        text.appendChild(datesEl);
+      }
+
+      const prioritySelect = document.createElement('select');
+      prioritySelect.className = 'badge priority-select badge-' + task.priority;
+      Object.keys(PRIORITY_LABEL).forEach(function (key) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = PRIORITY_LABEL[key];
+        if (key === task.priority) opt.selected = true;
+        prioritySelect.appendChild(opt);
+      });
+
+      info.appendChild(text);
+      info.appendChild(prioritySelect);
+
+      const statusSelect = document.createElement('select');
+      statusSelect.className = 'status-select';
+      Object.keys(STATUS_LABEL).forEach(function (key) {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = STATUS_LABEL[key];
+        if (key === task.status) opt.selected = true;
+        statusSelect.appendChild(opt);
+      });
+
+      li.appendChild(info);
+      li.appendChild(statusSelect);
+      taskList.appendChild(li);
+    });
+  }
+
+  function renderCalendar() {
+    calendarPanel.classList.toggle('visible', calendarVisible);
+    calendarToggleBtn.textContent = calendarVisible ? '캘린더 숨기기' : '캘린더 보기';
+    if (!calendarVisible) return;
+
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    calendarLabel.textContent = year + '년 ' + (month + 1) + '월';
+
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = todayStr();
+
+    calendarGrid.innerHTML = '';
+
+    ['일', '월', '화', '수', '목', '금', '토'].forEach(function (label) {
+      const head = document.createElement('div');
+      head.className = 'cal-weekday';
+      head.textContent = label;
+      calendarGrid.appendChild(head);
+    });
+
+    for (let i = 0; i < firstWeekday; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'cal-cell empty';
+      calendarGrid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = formatDate(year, month, day);
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell' + (dateStr === today ? ' today' : '') + (dateStr === selectedDate ? ' selected' : '');
+      cell.dataset.date = dateStr;
+
+      const num = document.createElement('span');
+      num.className = 'cal-day-num';
+      num.textContent = day;
+      cell.appendChild(num);
+
+      const dayTasks = tasks.filter(function (t) {
+        if (!t.startDate) return false;
+        const start = t.startDate;
+        const end = t.endDate || t.startDate;
+        return dateStr >= start && dateStr <= end;
+      });
+
+      if (dayTasks.length) {
+        const dots = document.createElement('div');
+        dots.className = 'cal-dots';
+        dayTasks.slice(0, 3).forEach(function (t) {
+          const dot = document.createElement('span');
+          dot.className = 'cal-dot cal-dot-' + t.priority;
+          dot.title = t.title;
+          dots.appendChild(dot);
+        });
+        if (dayTasks.length > 3) {
+          const more = document.createElement('span');
+          more.className = 'cal-more';
+          more.textContent = '+' + (dayTasks.length - 3);
+          dots.appendChild(more);
+        }
+        cell.appendChild(dots);
+      }
+
+      calendarGrid.appendChild(cell);
+    }
+  }
+
+  function renderDateFilterIndicator() {
+    if (!selectedDate) {
+      dateFilterIndicator.classList.remove('visible');
+      return;
+    }
+    dateFilterIndicator.classList.add('visible');
+    const parts = selectedDate.split('-');
+    dateFilterLabel.textContent = parseInt(parts[1], 10) + '월 ' + parseInt(parts[2], 10) + '일 과제만 표시 중';
+  }
+
+  function render() {
+    renderList();
+    renderSummary();
+    renderCalendar();
+    renderDateFilterIndicator();
+  }
+
+  addForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const title = titleInput.value.trim();
+    if (!title) {
+      titleInput.focus();
+      return;
+    }
+
+    const startDate = startDateInput.value || null;
+    const endDate = endDateInput.value || null;
+    if (startDate && endDate && endDate < startDate) {
+      formError.classList.add('visible');
+      endDateInput.focus();
+      return;
+    }
+    formError.classList.remove('visible');
+
+    addTask(title, priorityInput.value, startDate, endDate);
+    titleInput.value = '';
+    priorityInput.value = 'medium';
+    startDateInput.value = '';
+    endDateInput.value = '';
+    titleInput.focus();
+  });
+
+  calendarToggleBtn.addEventListener('click', function () {
+    calendarVisible = !calendarVisible;
+    if (!calendarVisible) selectedDate = null;
+    render();
+  });
+
+  calendarPrevBtn.addEventListener('click', function () {
+    calendarMonth.setMonth(calendarMonth.getMonth() - 1);
+    selectedDate = null;
+    render();
+  });
+
+  calendarNextBtn.addEventListener('click', function () {
+    calendarMonth.setMonth(calendarMonth.getMonth() + 1);
+    selectedDate = null;
+    render();
+  });
+
+  calendarGrid.addEventListener('click', function (e) {
+    const cell = e.target.closest('.cal-cell');
+    if (!cell || !cell.dataset.date) return;
+    selectedDate = selectedDate === cell.dataset.date ? null : cell.dataset.date;
+    render();
+  });
+
+  dateFilterClear.addEventListener('click', function () {
+    selectedDate = null;
+    render();
+  });
+
+  filterTabs.addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-filter]');
+    if (!btn) return;
+    currentFilter = btn.dataset.filter;
+    filterTabs.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    renderList();
+  });
+
+  taskList.addEventListener('change', function (e) {
+    const prioritySelect = e.target.closest('.priority-select');
+    if (prioritySelect) {
+      const li = prioritySelect.closest('.task-item');
+      updatePriority(li.dataset.id, prioritySelect.value);
+      return;
+    }
+    const statusSelect = e.target.closest('.status-select');
+    if (!statusSelect) return;
+    const li = statusSelect.closest('.task-item');
+    updateStatus(li.dataset.id, statusSelect.value);
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
