@@ -18,3 +18,4 @@ This is not a buildable software project — it's a single self-contained HTML f
 - The file follows a consistent internal pattern: an IIFE at the bottom of the `<script>` block holds all state and DOM references at the top, small mutation functions (e.g. `addTask`, `updateStatus`, `updatePriority`), and a `render()` function that re-syncs the DOM from state (calling `renderList`, `renderSummary`, `renderCalendar`, `renderDateFilterIndicator`). When editing behavior, follow this same "mutate state, then call render" flow rather than mutating the DOM directly in event handlers.
 - UI text is in Korean (`lang="ko"`); keep new user-facing strings consistent with the existing language unless asked otherwise.
 - Since there's no git repo here, don't assume commit/branch workflows are available — confirm with the user before suggesting `git init` or similar.
+## working
