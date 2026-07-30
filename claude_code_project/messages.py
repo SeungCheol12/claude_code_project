@@ -26,19 +26,15 @@ def build_sniper_message(member_name, deadline_label):
     return f"🔔 {member_name}님, 이번 주 폴더가 아직 조용하네요. 마감까지 {deadline_label}!"
 
 
-def build_progress_check_message(member_name, commits):
-    """커밋 있음 → 잠정 '진행 확인' 메시지.
-
-    AI 판정(judge.py)이 붙기 전까지 쓰는 자리표시자.
-    다음 단계에서 judge.py 결과(meaningful/summary/progress_pct)를 받아
-    "✅ ... 60% 진행 중" / "🕵️ ... 전부 공백 수정" 메시지로 교체될 예정이므로,
-    호출부(main.py)는 이 함수만 바꿔 끼우면 되도록 분리해둔다.
-    """
-    return f"🔍 {member_name}님의 커밋 {len(commits)}개를 확인했습니다. (진행 내용 AI 판정 예정)"
+def build_cheat_detected_message(member_name, commit_count, reasons):
+    """AI 판정 결과 전부 meaningful=false → 꼼수 감지 메시지."""
+    reason_text = ", ".join(reasons) if reasons else "의미 없는 변경"
+    return (
+        f"🕵️ {member_name}님의 커밋 {commit_count}개를 확인했지만... "
+        f"전부 의미 없는 변경이었습니다. ({reason_text})"
+    )
 
 
-def build_member_message(member_name, commits, deadline_label):
-    """멤버의 이번 주 커밋 유무에 따라 적절한 메시지를 생성한다."""
-    if not commits:
-        return build_sniper_message(member_name, deadline_label)
-    return build_progress_check_message(member_name, commits)
+def build_progress_message(member_name, summary, progress_pct):
+    """AI 판정 결과 meaningful=true인 커밋이 있음 → 진행 요약 + 진행률 메시지."""
+    return f"✅ {member_name}님: {summary} (진행률 {progress_pct}%). 순항하고 있어요!"
