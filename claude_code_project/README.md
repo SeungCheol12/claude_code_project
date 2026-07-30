@@ -45,6 +45,25 @@ cp .env.example .env
 
 `config.yaml`도 실제 스터디에 맞게 수정한다 (`study_repo`, `start_date`, `members`, `weekly_topic`).
 
+### 실제 레포 연동하기
+
+**폴더 구조** — 스터디 레포는 아래 구조를 따라야 한다.
+
+```
+week1/hong-gildong/...
+week1/kim-chulsoo/...
+week4/kim-chulsoo/exception_summary.md   ← 이런 식으로 "week{N}/{github_id}/" 아래 제출
+```
+
+- `N`은 1부터 시작하는 주차 번호. `config.yaml`의 `start_date`(1주차 월요일)를 기준으로 계산된다.
+- `members`의 `github_id`가 폴더명과 정확히 일치해야 한다.
+
+**GITHUB_TOKEN 권한** — 커밋 목록/diff 조회(읽기)만 하므로 읽기 권한만 있으면 된다.
+
+- Fine-grained personal access token (권장): GitHub → Settings → Developer settings →
+  Fine-grained tokens → 대상 레포만 선택 → Repository permissions에서 **Contents: Read-only**.
+- Classic PAT를 쓴다면: private 레포는 `repo` scope, public 레포는 `public_repo` scope로 충분하다.
+
 ## 실행
 
 ```bash
@@ -64,6 +83,37 @@ python main.py check [옵션]
 `GITHUB_TOKEN` / `ANTHROPIC_API_KEY` / `SLACK_WEBHOOK_URL`이 필요한 상황에서 값이 없으면
 에러 메시지와 함께 즉시 종료한다 (silent fail 없음). 에러 메시지가 해당 상황에서 쓸 수 있는
 `--mock` / `--mock-ai` / `--dry-run`을 안내해준다.
+
+### 하이브리드 모드 (일부 멤버만 실제 조회)
+
+발표 중에 "다들 픽스처인 거 아니냐"는 의심을 없애려면, 멤버 한두 명만 실제 레포에서
+불러오고 나머지는 픽스처로 진행할 수 있다. `config.yaml`의 멤버별 `mock` 필드로 제어한다.
+
+```yaml
+members:
+  - github_id: "kim-chulsoo"
+    name: "김철수"
+    mock: false   # --mock을 줘도 이 멤버는 실제 GitHub API로 조회
+  - github_id: "lee-younghee"
+    name: "이영희"
+    mock: true    # 기본값. --mock이면 픽스처 사용
+```
+
+```bash
+python main.py check --mock --mock-ai --dry-run
+```
+
+위 명령을 실행하면 `mock: false`인 멤버만 실제 `GITHUB_TOKEN`으로 GitHub를 조회하고,
+나머지는 픽스처를 쓴다. 동작 규칙:
+
+- 실제 조회 대상 멤버가 하나라도 있는데 `GITHUB_TOKEN`이 없으면, 어느 멤버 때문인지
+  명시한 에러를 내고 시작 전에 즉시 종료한다.
+- 실제 조회 도중 레이트리밋/404 등으로 실패해도 **전체를 죽이지 않는다.** 그 멤버만
+  "⚠️ 조회 실패" 메시지로 표시하고, 나머지 멤버는 정상 진행한다. 발표 중 API 문제로
+  데모 전체가 멈추는 사고를 막기 위한 설계다.
+- `--mock` 없이 완전히 실제 모드로 실행할 때는 `mock` 필드와 무관하게 모든 멤버를
+  실제로 조회하며, 이때는 기존과 동일하게 실패 시 즉시 종료한다 (운영 환경에서는
+  조용히 넘어가면 안 되므로).
 
 ## 데모 시나리오
 

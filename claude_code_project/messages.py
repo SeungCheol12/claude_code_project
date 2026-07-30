@@ -38,3 +38,8 @@ def build_cheat_detected_message(member_name, commit_count, reasons):
 def build_progress_message(member_name, summary, progress_pct):
     """AI 판정 결과 meaningful=true인 커밋이 있음 → 진행 요약 + 진행률 메시지."""
     return f"✅ {member_name}님: {summary} (진행률 {progress_pct}%). 순항하고 있어요!"
+
+
+def build_fetch_failed_message(member_name, error_summary):
+    """하이브리드 모드에서 실제 GitHub 조회가 실패했을 때 → 해당 멤버만 조회 실패로 표시."""
+    return f"⚠️ {member_name}님: GitHub 조회에 실패했습니다 ({error_summary}). 수동으로 확인해주세요."

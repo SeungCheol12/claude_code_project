@@ -6,7 +6,7 @@ import sys
 
 import anthropic
 
-MODEL = os.environ.get("JUDGE_MODEL", "claude-sonnet-4-6")
+MODEL = os.environ.get("JUDGE_MODEL", "claude-haiku-4-5-20251001")
 MAX_TOKENS = 500
 DIFF_TRUNCATE_LEN = 3000
 
@@ -59,9 +59,19 @@ def judge_diff(weekly_topic, diff_text, api_key=None):
     return _parse_judge_response(text)
 
 
+def _strip_code_fence(text):
+    """모델이 지시를 어기고 ```json ... ``` 코드펜스로 감싸 응답한 경우를 대비해 벗겨낸다."""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.split("\n", 1)[1] if "\n" in stripped else stripped[3:]
+        if stripped.rstrip().endswith("```"):
+            stripped = stripped.rstrip()[:-3]
+    return stripped.strip()
+
+
 def _parse_judge_response(text):
     try:
-        result = json.loads(text)
+        result = json.loads(_strip_code_fence(text))
     except json.JSONDecodeError:
         print(f"[Claude 오류] 응답이 JSON 형식이 아닙니다:\n{text}", file=sys.stderr)
         sys.exit(1)
@@ -79,8 +89,6 @@ def _parse_judge_response(text):
 
 
 _MOCK_JUDGE_RESULTS = {
-    "b7c8d9e": {"meaningful": False, "summary": "공백/줄바꿈만 수정됨", "progress_pct": 0},
-    "c9d0e1f": {"meaningful": False, "summary": "주제와 무관한 파일 변경", "progress_pct": 0},
     "e4f5a6b": {"meaningful": True, "summary": "예외처리 요약", "progress_pct": 60},
 }
 

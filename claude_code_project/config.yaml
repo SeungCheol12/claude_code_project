@@ -1,11 +1,14 @@
-study_repo: "org/study-repo"
+study_repo: "SeungCheol12/study_repo"
 start_date: "2026-07-06"      # 1주차 시작 월요일
 deadline_weekday: "SUN"        # 매주 일요일 마감
 members:
-  - github_id: "hong-gildong"
-    name: "홍길동"
+  - github_id: "SeungCheol12"
+    name: "백승철"
+    mock: false    # true(기본값): --mock 실행 시 픽스처 사용. false: --mock이어도 실제 GitHub 조회
   - github_id: "kim-chulsoo"
     name: "김철수"
+    mock: true
   - github_id: "lee-younghee"
     name: "이영희"
+    mock: true
 weekly_topic: "3장 예외처리 요약"   # AI 판정 기준으로 전달

@@ -17,6 +17,37 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stderr.reconfigure(encoding="utf-8")
 
 
+def _fetch_commits(cfg, github_id, week, token, resilient):
+    """실제 GitHub 커밋 조회. resilient=True면 실패 시 죽지 않고 (None, 에러메시지)를 반환한다."""
+    try:
+        commits = github.get_member_commits(
+            repo=cfg["study_repo"],
+            github_id=github_id,
+            week_num=week["week_num"],
+            week_start=week["week_start"],
+            week_end=week["week_end"],
+            token=token,
+        )
+        return commits, None
+    except github.GitHubAPIError as e:
+        if resilient:
+            return None, str(e)
+        print(f"[GitHub 오류] {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _fetch_diff(cfg, sha, token, resilient):
+    """실제 GitHub diff 조회. resilient=True면 실패 시 죽지 않고 (None, 에러메시지)를 반환한다."""
+    try:
+        diff = github.get_commit_diff(cfg["study_repo"], sha, token)
+        return diff, None
+    except github.GitHubAPIError as e:
+        if resilient:
+            return None, str(e)
+        print(f"[GitHub 오류] {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def cmd_check(args):
     load_dotenv()
 
@@ -34,52 +65,75 @@ def cmd_check(args):
     deadline_label = messages.compute_deadline_label(week["week_start"], cfg["deadline_weekday"])
     member_messages = []
 
+    # 하이브리드 모드: --mock이어도 member.mock=false면 그 멤버는 실제 GitHub 조회 대상
+    real_fetch_members = [m for m in cfg["members"] if not args.mock or not m["mock"]]
+    if real_fetch_members and not token:
+        names = ", ".join(m["name"] for m in real_fetch_members)
+        print(
+            f"[GitHub 오류] 실제 GitHub 조회가 필요한 멤버가 있는데 ({names}) "
+            "GITHUB_TOKEN 환경 변수가 설정되지 않았습니다. .env 파일에 GITHUB_TOKEN을 설정하세요.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     for member in cfg["members"]:
         github_id = member["github_id"]
         name = member["name"]
+        use_mock = args.mock and member["mock"]
+        # --mock 실행 중 특정 멤버만 실제 조회하는 하이브리드 오버라이드는
+        # 발표 중 사고를 막기 위해 실패해도 죽지 않고 그 멤버만 건너뛴다.
+        hybrid_override = args.mock and not member["mock"]
 
-        if args.mock:
+        print(f"[{name} ({github_id})]" + (" (실제 조회)" if hybrid_override else ""))
+
+        fetch_error = None
+        if use_mock:
             commits = github.get_mock_member_commits(github_id, week["week_num"])
         else:
-            commits = github.get_member_commits(
-                repo=cfg["study_repo"],
-                github_id=github_id,
-                week_num=week["week_num"],
-                week_start=week["week_start"],
-                week_end=week["week_end"],
-                token=token,
-            )
+            commits, fetch_error = _fetch_commits(cfg, github_id, week, token, resilient=hybrid_override)
 
-        print(f"[{name} ({github_id})]")
-        if not commits:
+        if fetch_error:
+            print(f"  ⚠️ 조회 실패: {fetch_error}")
+        elif not commits:
             print("  커밋 없음")
         else:
             for c in commits:
                 print(f"  - {c['sha']} {c['message']} ({c['author_date']})")
 
-        if not commits:
+        if fetch_error:
+            message = messages.build_fetch_failed_message(name, fetch_error)
+        elif not commits:
             message = messages.build_sniper_message(name, deadline_label)
         else:
             judge_results = []
+            diff_error = None
             for c in commits:
-                if args.mock:
+                if use_mock:
                     diff = github.get_mock_commit_diff(c["sha"])
                 else:
-                    diff = github.get_commit_diff(cfg["study_repo"], c["sha"], token)
+                    diff, diff_error = _fetch_diff(cfg, c["sha"], token, resilient=hybrid_override)
+                    if diff_error:
+                        break
 
-                if args.mock_ai:
+                # --mock-ai는 mock 커밋에만 적용한다. 실제로 조회한 커밋(하이브리드 오버라이드)은
+                # sha를 미리 알 수 없어 mock 판정 데이터가 있을 수 없으므로 항상 실제로 판정한다.
+                if args.mock_ai and use_mock:
                     result = judge.get_mock_judge_result(c["sha"])
                 else:
                     result = judge.judge_diff(cfg["weekly_topic"], diff)
                 judge_results.append(result)
 
-            meaningful_results = [r for r in judge_results if r["meaningful"]]
-            if meaningful_results:
-                best = max(meaningful_results, key=lambda r: r["progress_pct"])
-                message = messages.build_progress_message(name, best["summary"], best["progress_pct"])
+            if diff_error:
+                print(f"  ⚠️ diff 조회 실패: {diff_error}")
+                message = messages.build_fetch_failed_message(name, diff_error)
             else:
-                reasons = [r["summary"] for r in judge_results]
-                message = messages.build_cheat_detected_message(name, len(commits), reasons)
+                meaningful_results = [r for r in judge_results if r["meaningful"]]
+                if meaningful_results:
+                    best = max(meaningful_results, key=lambda r: r["progress_pct"])
+                    message = messages.build_progress_message(name, best["summary"], best["progress_pct"])
+                else:
+                    reasons = [r["summary"] for r in judge_results]
+                    message = messages.build_cheat_detected_message(name, len(commits), reasons)
 
         member_messages.append(message)
         if args.dry_run:

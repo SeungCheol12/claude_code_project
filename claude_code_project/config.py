@@ -36,6 +36,10 @@ def load_config(path="config.yaml"):
         if "github_id" not in m or "name" not in m:
             print(f"[설정 오류] members 항목에 github_id/name이 모두 필요합니다: {m}", file=sys.stderr)
             sys.exit(1)
+        if "mock" in m and not isinstance(m["mock"], bool):
+            print(f"[설정 오류] members의 mock 필드는 true/false여야 합니다: {m}", file=sys.stderr)
+            sys.exit(1)
+        m.setdefault("mock", True)
 
     try:
         raw["start_date"] = datetime.datetime.strptime(raw["start_date"], "%Y-%m-%d").date()
